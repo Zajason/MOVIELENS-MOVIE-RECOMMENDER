@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MovieLens Explorer</title>
+  <link rel="stylesheet" href="index.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-overlay"></div>
+    <div class="container hero-content">
+      <div class="hero-title-row">
+        <div class="hero-icon">🎬</div>
+        <div>
+          <h1>MovieLens Explorer</h1>
+          <p>Search, rate, and discover movies powered by collaborative filtering</p>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container main-content">
+    <div id="feedback" class="feedback hidden"></div>
+
+    <section class="card">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon purple">＋</span>
+          <h2>Add Movie</h2>
+        </div>
+      </div>
+
+      <div class="form-grid">
+        <div class="input-group">
+          <label for="newMovieTitle">Movie Title</label>
+          <input type="text" id="newMovieTitle" placeholder="Enter movie title" />
+        </div>
+
+        <div class="input-group">
+          <label for="newMovieGenres">Genres</label>
+          <input type="text" id="newMovieGenres" placeholder="Action|Drama|Comedy" />
+        </div>
+      </div>
+
+      <button id="addMovieBtn" class="btn btn-purple">Add Movie</button>
+    </section>
+
+    <section class="card">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon blue">⌕</span>
+          <h2>Search Movies</h2>
+        </div>
+        <span id="movieCountBadge" class="badge">0 total</span>
+      </div>
+
+      <div class="search-row">
+        <div class="search-input-wrapper">
+          <span class="search-inline-icon">⌕</span>
+          <input type="text" id="searchQuery" placeholder="Search movies..." />
+        </div>
+        <button id="searchBtn" class="btn btn-blue">Search</button>
+      </div>
+
+      <div class="table-wrapper">
+        <table id="moviesTable">
+          <thead>
+            <tr>
+              <th>Title</th>
+              <th>Genres</th>
+              <th>Avg Rating</th>
+              <th>Your Rating</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="moviesTableBody"></tbody>
+        </table>
+      </div>
+
+      <div id="noMoviesMessage" class="empty-state hidden">
+        <div class="empty-icon">⌕</div>
+        <p>No movies found</p>
+        <span>Try a different search term</span>
+      </div>
+    </section>
+
+    <section class="card card-green">
+      <div class="section-header">
+        <div class="section-title">
+          <span class="section-icon green">↗</span>
+          <h2>Recommendations</h2>
+        </div>
+        <span id="recommendationCountBadge" class="badge green-badge hidden">0 picks</span>
+      </div>
+
+      <button id="recommendBtn" class="btn btn-green">Get Recommendations</button>
+
+      <div id="recommendationsContainer" class="table-wrapper hidden">
+        <table>
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Title</th>
+              <th>Genres</th>
+              <th>Predicted Rating</th>
+            </tr>
+          </thead>
+          <tbody id="recommendationsTableBody"></tbody>
+        </table>
+      </div>
+
+      <div id="recommendationsEmpty" class="empty-state white-box">
+        <div class="empty-icon green-text">↗</div>
+        <p>Click the button above to get personalized recommendations</p>
+        <span>Based on collaborative filtering</span>
+      </div>
+    </section>
+  </main>
+
+  <div id="ratingsModal" class="modal hidden">
+    <div class="modal-backdrop"></div>
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <h3>User Ratings</h3>
+          <p id="modalMovieTitle"></p>
+        </div>
+        <button id="closeModalBtn" class="icon-btn">✕</button>
+      </div>
+      <div id="ratingsList" class="ratings-list"></div>
+    </div>
+  </div>
+
+  <script src="index.js"></script>
+</body>
+</html>
