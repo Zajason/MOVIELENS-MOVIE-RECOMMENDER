@@ -7,15 +7,16 @@
   <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-  <header class="hero">
-    <div class="hero-overlay"></div>
-    <div class="container hero-content">
-      <div class="hero-title-row">
-        <div class="hero-icon">🎬</div>
-        <div>
-          <h1>MovieLens Explorer</h1>
-          <p>Search, rate, and discover movies powered by collaborative filtering</p>
-        </div>
+  <header class="app-header">
+    <div class="container header-inner">
+      <div>
+        <p class="eyebrow">MovieLens latest-small</p>
+        <h1>MovieLens Workbench</h1>
+      </div>
+      <div class="header-meta" aria-label="Project stack">
+        <span>SQLite</span>
+        <span>FastAPI</span>
+        <span>Vanilla JS</span>
       </div>
     </div>
   </header>
@@ -23,79 +24,86 @@
   <main class="container main-content">
     <div id="feedback" class="feedback hidden"></div>
 
-    <section class="card">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-icon purple">＋</span>
-          <h2>Add Movie</h2>
+    <div class="workspace-grid">
+      <aside class="side-panel">
+        <section class="panel-block">
+          <div class="section-header compact">
+            <div>
+              <p class="section-kicker">Create</p>
+              <h2>Add movie</h2>
+            </div>
+          </div>
+
+          <div class="form-grid single">
+            <div class="input-group">
+              <label for="newMovieTitle">Movie title</label>
+              <input type="text" id="newMovieTitle" placeholder="e.g. City Lights (1931)" />
+            </div>
+
+            <div class="input-group">
+              <label for="newMovieGenres">Genres</label>
+              <input type="text" id="newMovieGenres" placeholder="Comedy|Drama|Romance" />
+            </div>
+          </div>
+
+          <button id="addMovieBtn" class="btn btn-primary">Add Movie</button>
+        </section>
+
+        <section class="panel-block recommendation-panel">
+          <div class="section-header compact">
+            <div>
+              <p class="section-kicker">Personal list</p>
+              <h2>Recommendations</h2>
+            </div>
+            <span id="recommendationCountBadge" class="badge hidden">0 picks</span>
+          </div>
+
+          <button id="recommendBtn" class="btn btn-dark">Get Recommendations</button>
+
+          <div id="recommendationsEmpty" class="empty-state small-empty">
+            <p>Rate movies in the table, then request recommendations.</p>
+          </div>
+        </section>
+      </aside>
+
+      <section class="data-panel">
+        <div class="section-header">
+          <div>
+            <p class="section-kicker">Dataset browser</p>
+            <h2>Search movies</h2>
+          </div>
+          <span id="movieCountBadge" class="badge">0 total</span>
         </div>
-      </div>
 
-      <div class="form-grid">
-        <div class="input-group">
-          <label for="newMovieTitle">Movie Title</label>
-          <input type="text" id="newMovieTitle" placeholder="Enter movie title" />
+        <div class="search-row">
+          <div class="search-input-wrapper">
+            <input type="text" id="searchQuery" placeholder="Search by title keyword" />
+          </div>
+          <button id="searchBtn" class="btn btn-primary">Search</button>
         </div>
 
-        <div class="input-group">
-          <label for="newMovieGenres">Genres</label>
-          <input type="text" id="newMovieGenres" placeholder="Action|Drama|Comedy" />
+        <div class="table-wrapper">
+          <table id="moviesTable">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Genres</th>
+                <th>Avg Rating</th>
+                <th>Your Rating</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="moviesTableBody"></tbody>
+          </table>
         </div>
-      </div>
 
-      <button id="addMovieBtn" class="btn btn-purple">Add Movie</button>
-    </section>
-
-    <section class="card">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-icon blue">⌕</span>
-          <h2>Search Movies</h2>
+        <div id="noMoviesMessage" class="empty-state hidden">
+          <p>No movies found. Try a different search term.</p>
         </div>
-        <span id="movieCountBadge" class="badge">0 total</span>
-      </div>
+      </section>
+    </div>
 
-      <div class="search-row">
-        <div class="search-input-wrapper">
-          <span class="search-inline-icon">⌕</span>
-          <input type="text" id="searchQuery" placeholder="Search movies..." />
-        </div>
-        <button id="searchBtn" class="btn btn-blue">Search</button>
-      </div>
-
-      <div class="table-wrapper">
-        <table id="moviesTable">
-          <thead>
-            <tr>
-              <th>Title</th>
-              <th>Genres</th>
-              <th>Avg Rating</th>
-              <th>Your Rating</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody id="moviesTableBody"></tbody>
-        </table>
-      </div>
-
-      <div id="noMoviesMessage" class="empty-state hidden">
-        <div class="empty-icon">⌕</div>
-        <p>No movies found</p>
-        <span>Try a different search term</span>
-      </div>
-    </section>
-
-    <section class="card card-green">
-      <div class="section-header">
-        <div class="section-title">
-          <span class="section-icon green">↗</span>
-          <h2>Recommendations</h2>
-        </div>
-        <span id="recommendationCountBadge" class="badge green-badge hidden">0 picks</span>
-      </div>
-
-      <button id="recommendBtn" class="btn btn-green">Get Recommendations</button>
-
+    <section class="recommendation-results">
       <div id="recommendationsContainer" class="table-wrapper hidden">
         <table>
           <thead>
@@ -108,12 +116,6 @@
           </thead>
           <tbody id="recommendationsTableBody"></tbody>
         </table>
-      </div>
-
-      <div id="recommendationsEmpty" class="empty-state white-box">
-        <div class="empty-icon green-text">↗</div>
-        <p>Click the button above to get personalized recommendations</p>
-        <span>Based on collaborative filtering</span>
       </div>
     </section>
   </main>
