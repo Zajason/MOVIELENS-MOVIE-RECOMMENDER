@@ -65,24 +65,29 @@ function renderMovies() {
   noMoviesMessage.classList.add("hidden");
 
   movies.forEach((movie) => {
-    const tr = document.createElement("tr");
+    const article = document.createElement("article");
+    article.className = "movie-item";
     const genreHtml = movie.genres
       .split("|")
       .map((genre) => `<span class="genre-tag">${escapeHtml(genre)}</span>`)
       .join("");
     const ownRating = userRatings[movie.movieId] ?? "";
 
-    tr.innerHTML = `
-      <td>${escapeHtml(movie.title)}</td>
-      <td><div class="genre-list">${genreHtml}</div></td>
-      <td>
+    article.innerHTML = `
+      <div class="movie-main">
+        <h3>${escapeHtml(movie.title)}</h3>
+        <div class="genre-list">${genreHtml}</div>
+      </div>
+      <div class="movie-average">
+        <span class="metric-label">Average</span>
         <div class="rating-cell">
           <span>★</span>
           <span>${Number(movie.averageRating || 0).toFixed(2)}</span>
           <small>(${movie.ratingCount})</small>
         </div>
-      </td>
-      <td>
+      </div>
+      <div class="movie-rate">
+        <label>Your rating</label>
         <div class="your-rating-wrapper">
           <input
             class="rating-input"
@@ -96,15 +101,15 @@ function renderMovies() {
           />
           ${ownRating ? "<span>★</span>" : ""}
         </div>
-      </td>
-      <td>
+      </div>
+      <div class="movie-action">
         <button class="secondary-btn view-ratings-btn" data-movie-id="${movie.movieId}">
           View Ratings
         </button>
-      </td>
+      </div>
     `;
 
-    moviesTableBody.appendChild(tr);
+    moviesTableBody.appendChild(article);
   });
 
   document.querySelectorAll(".rating-input").forEach((input) => {
@@ -132,23 +137,29 @@ function renderRecommendations() {
   recommendationCountBadge.textContent = `${recommendations.length} picks`;
 
   recommendations.forEach((rec, index) => {
-    const tr = document.createElement("tr");
+    const article = document.createElement("article");
+    article.className = "recommendation-item";
     const genreHtml = rec.genres
       .split("|")
       .map((genre) => `<span class="genre-tag">${escapeHtml(genre)}</span>`)
       .join("");
 
-    tr.innerHTML = `
-      <td><div class="rank-badge ${index === 0 ? "top" : ""}">${index + 1}</div></td>
-      <td>
-        ${escapeHtml(rec.title)}
+    article.innerHTML = `
+      <div class="rank-badge ${index === 0 ? "top" : ""}">${index + 1}</div>
+      <div class="recommendation-copy">
+        <h3>
+          ${escapeHtml(rec.title)}
+        </h3>
         ${index === 0 ? '<span class="top-pick">Top Pick</span>' : ""}
-      </td>
-      <td><div class="genre-list">${genreHtml}</div></td>
-      <td>★ ${Number(rec.predictedRating).toFixed(2)}</td>
+        <div class="genre-list">${genreHtml}</div>
+      </div>
+      <div class="predicted-score">
+        <span>★</span>
+        ${Number(rec.predictedRating).toFixed(2)}
+      </div>
     `;
 
-    recommendationsTableBody.appendChild(tr);
+    recommendationsTableBody.appendChild(article);
   });
 }
 
