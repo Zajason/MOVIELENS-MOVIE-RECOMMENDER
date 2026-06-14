@@ -1,23 +1,29 @@
 const API_BASE_URL = "http://127.0.0.1:3000/movielens/api";
+const RATING_OPTIONS = [0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, 5];
 
 let movies = [];
 let recommendations = [];
 const userRatings = {};
 
 const feedbackEl = document.getElementById("feedback");
+const searchQueryEl = document.getElementById("searchQuery");
+const searchBtn = document.getElementById("searchBtn");
+const searchSummary = document.getElementById("searchSummary");
+const movieCountBadge = document.getElementById("movieCountBadge");
+const moviesTableBody = document.getElementById("moviesTableBody");
+const noMoviesMessage = document.getElementById("noMoviesMessage");
+const addMovieForm = document.getElementById("addMovieForm");
 const newMovieTitleEl = document.getElementById("newMovieTitle");
 const newMovieGenresEl = document.getElementById("newMovieGenres");
 const addMovieBtn = document.getElementById("addMovieBtn");
-const searchQueryEl = document.getElementById("searchQuery");
-const searchBtn = document.getElementById("searchBtn");
-const moviesTableBody = document.getElementById("moviesTableBody");
-const noMoviesMessage = document.getElementById("noMoviesMessage");
-const movieCountBadge = document.getElementById("movieCountBadge");
+const ratingCountText = document.getElementById("ratingCountText");
+const ratingStack = document.getElementById("ratingStack");
+const clearRatingsBtn = document.getElementById("clearRatingsBtn");
 const recommendBtn = document.getElementById("recommendBtn");
+const recommendationCountBadge = document.getElementById("recommendationCountBadge");
+const recommendationsEmpty = document.getElementById("recommendationsEmpty");
 const recommendationsContainer = document.getElementById("recommendationsContainer");
 const recommendationsTableBody = document.getElementById("recommendationsTableBody");
-const recommendationsEmpty = document.getElementById("recommendationsEmpty");
-const recommendationCountBadge = document.getElementById("recommendationCountBadge");
 const ratingsModal = document.getElementById("ratingsModal");
 const closeModalBtn = document.getElementById("closeModalBtn");
 const modalMovieTitle = document.getElementById("modalMovieTitle");
@@ -28,10 +34,10 @@ function showFeedback(message, type) {
   feedbackEl.className = `feedback ${type}`;
   feedbackEl.classList.remove("hidden");
 
-  clearTimeout(showFeedback._timer);
-  showFeedback._timer = setTimeout(() => {
+  clearTimeout(showFeedback.timer);
+  showFeedback.timer = setTimeout(() => {
     feedbackEl.classList.add("hidden");
-  }, 3500);
+  }, 3600);
 }
 
 function escapeHtml(text) {
@@ -53,8 +59,42 @@ async function apiRequest(path, options = {}) {
   return data;
 }
 
+function movieLabel(movieId) {
+  const movie = movies.find((item) => item.movieId === Number(movieId));
+  return movie ? movie.title : `Movie ${movieId}`;
+}
+
+function genreTags(genres) {
+  return genres
+    .split("|")
+    .filter(Boolean)
+    .map((genre) => `<span class="genre-tag">${escapeHtml(genre)}</span>`)
+    .join("");
+}
+
+function updateRatingQueue() {
+  const entries = Object.entries(userRatings);
+  ratingCountText.textContent = `${entries.length} rating${entries.length === 1 ? "" : "s"} selected`;
+  ratingStack.innerHTML = "";
+
+  if (entries.length === 0) {
+    ratingStack.innerHTML = '<p class="quiet">Rate movies in the catalog to build a temporary profile.</p>';
+    return;
+  }
+
+  entries.slice(-6).reverse().forEach(([movieId, rating]) => {
+    const item = document.createElement("div");
+    item.className = "rating-stack-item";
+    item.innerHTML = `
+      <strong title="${escapeHtml(movieLabel(movieId))}">${escapeHtml(movieLabel(movieId))}</strong>
+      <span>${Number(rating).toFixed(1)} ★</span>
+    `;
+    ratingStack.appendChild(item);
+  });
+}
+
 function renderMovies() {
-  movieCountBadge.textContent = `${movies.length} shown`;
+  movieCountBadge.textContent = `${movies.length} movie${movies.length === 1 ? "" : "s"}`;
   moviesTableBody.innerHTML = "";
 
   if (movies.length === 0) {
@@ -65,55 +105,53 @@ function renderMovies() {
   noMoviesMessage.classList.add("hidden");
 
   movies.forEach((movie) => {
-    const article = document.createElement("article");
-    article.className = "movie-item";
-    const genreHtml = movie.genres
-      .split("|")
-      .map((genre) => `<span class="genre-tag">${escapeHtml(genre)}</span>`)
-      .join("");
-    const ownRating = userRatings[movie.movieId] ?? "";
+    const row = document.createElement("article");
+    row.className = "movie-row";
+    const selectedRating = userRatings[movie.movieId];
+    const ratingButtons = RATING_OPTIONS.map((rating) => {
+      const selected = Number(selectedRating) === rating ? "selected" : "";
+      return `
+        <button
+          class="rating-chip ${selected}"
+          type="button"
+          data-movie-id="${movie.movieId}"
+          data-rating="${rating}"
+          aria-label="Rate ${escapeHtml(movie.title)} ${rating} stars"
+        >${Number(rating).toFixed(1)}</button>
+      `;
+    }).join("");
 
-    article.innerHTML = `
-      <div class="movie-main">
+    row.innerHTML = `
+      <div class="movie-title">
         <h3>${escapeHtml(movie.title)}</h3>
-        <div class="genre-list">${genreHtml}</div>
+        <p class="movie-id">Movie ID ${movie.movieId}</p>
+        <div class="genre-list">${genreTags(movie.genres)}</div>
       </div>
-      <div class="movie-average">
-        <span class="metric-label">Average</span>
-        <div class="rating-cell">
-          <span>★</span>
-          <span>${Number(movie.averageRating || 0).toFixed(2)}</span>
-          <small>(${movie.ratingCount})</small>
-        </div>
+
+      <div class="rating-summary">
+        <div class="score"><span>★</span>${Number(movie.averageRating || 0).toFixed(2)}</div>
+        <small>${movie.ratingCount} dataset rating${movie.ratingCount === 1 ? "" : "s"}</small>
       </div>
-      <div class="movie-rate">
-        <label>Your rating</label>
-        <div class="your-rating-wrapper">
-          <input
-            class="rating-input"
-            type="number"
-            min="0.5"
-            max="5"
-            step="0.5"
-            value="${ownRating}"
-            data-movie-id="${movie.movieId}"
-            aria-label="Your rating for ${escapeHtml(movie.title)}"
-          />
-          ${ownRating ? "<span>★</span>" : ""}
-        </div>
+
+      <div class="rating-picker">
+        ${ratingButtons}
       </div>
-      <div class="movie-action">
-        <button class="secondary-btn view-ratings-btn" data-movie-id="${movie.movieId}">
-          View Ratings
-        </button>
-      </div>
+
+      <button
+        class="detail-action view-ratings-btn"
+        type="button"
+        data-movie-id="${movie.movieId}"
+        aria-label="View ratings for ${escapeHtml(movie.title)}"
+      >
+        Ratings
+      </button>
     `;
 
-    moviesTableBody.appendChild(article);
+    moviesTableBody.appendChild(row);
   });
 
-  document.querySelectorAll(".rating-input").forEach((input) => {
-    input.addEventListener("change", handleRateMovie);
+  document.querySelectorAll(".rating-chip").forEach((button) => {
+    button.addEventListener("click", handleRatingClick);
   });
 
   document.querySelectorAll(".view-ratings-btn").forEach((button) => {
@@ -134,46 +172,45 @@ function renderRecommendations() {
   recommendationsContainer.classList.remove("hidden");
   recommendationsEmpty.classList.add("hidden");
   recommendationCountBadge.classList.remove("hidden");
-  recommendationCountBadge.textContent = `${recommendations.length} picks`;
+  recommendationCountBadge.textContent = `${recommendations.length} pick${recommendations.length === 1 ? "" : "s"}`;
 
-  recommendations.forEach((rec, index) => {
-    const article = document.createElement("article");
-    article.className = "recommendation-item";
-    const genreHtml = rec.genres
-      .split("|")
-      .map((genre) => `<span class="genre-tag">${escapeHtml(genre)}</span>`)
-      .join("");
-
-    article.innerHTML = `
+  recommendations.forEach((movie, index) => {
+    const item = document.createElement("article");
+    item.className = "recommendation-item";
+    item.innerHTML = `
       <div class="rank-badge ${index === 0 ? "top" : ""}">${index + 1}</div>
       <div class="recommendation-copy">
-        <h3>
-          ${escapeHtml(rec.title)}
-        </h3>
-        ${index === 0 ? '<span class="top-pick">Top Pick</span>' : ""}
-        <div class="genre-list">${genreHtml}</div>
+        <h3>${escapeHtml(movie.title)}</h3>
+        ${index === 0 ? '<span class="top-pick">Top pick</span>' : ""}
+        <div class="genre-list">${genreTags(movie.genres)}</div>
       </div>
-      <div class="predicted-score">
-        <span>★</span>
-        ${Number(rec.predictedRating).toFixed(2)}
-      </div>
+      <div class="predicted-score">${Number(movie.predictedRating).toFixed(2)}</div>
     `;
-
-    recommendationsTableBody.appendChild(article);
+    recommendationsTableBody.appendChild(item);
   });
 }
 
 async function loadMovies(showMessage = false) {
-  const query = encodeURIComponent(searchQueryEl.value.trim());
+  const keyword = searchQueryEl.value.trim();
+  const query = encodeURIComponent(keyword);
+  searchBtn.disabled = true;
+
   try {
     const data = await apiRequest(`/movies?search=${query}`);
     movies = data.movies;
+    searchSummary.textContent = keyword
+      ? `Showing matches for "${keyword}".`
+      : "Showing the opening catalog sample.";
     renderMovies();
+    updateRatingQueue();
+
     if (showMessage) {
-      showFeedback(`Found ${movies.length} movie(s)`, "success");
+      showFeedback(`Found ${movies.length} movie${movies.length === 1 ? "" : "s"}.`, "success");
     }
   } catch (error) {
     showFeedback(error.message, "error");
+  } finally {
+    searchBtn.disabled = false;
   }
 }
 
@@ -182,12 +219,15 @@ async function handleAddMovie() {
   const genres = newMovieGenresEl.value.trim();
 
   if (!title || !genres) {
-    showFeedback("Please enter both a title and at least one genre.", "error");
+    showFeedback("Enter both a title and at least one genre.", "error");
     return;
   }
 
+  addMovieBtn.disabled = true;
+  addMovieBtn.textContent = "Adding...";
+
   try {
-    await apiRequest("/movies", {
+    const data = await apiRequest("/movies", {
       method: "POST",
       body: JSON.stringify({ title, genres })
     });
@@ -195,48 +235,70 @@ async function handleAddMovie() {
     newMovieGenresEl.value = "";
     searchQueryEl.value = title;
     await loadMovies(false);
-    showFeedback("Movie added successfully.", "success");
+    showFeedback(`Movie added with ID ${data.movieId}.`, "success");
   } catch (error) {
     showFeedback(error.message, "error");
+  } finally {
+    addMovieBtn.disabled = false;
+    addMovieBtn.textContent = "Add to Catalog";
   }
 }
 
-function handleRateMovie(event) {
-  const movieId = Number(event.target.dataset.movieId);
-  const rating = parseFloat(event.target.value);
+function handleRatingClick(event) {
+  const movieId = Number(event.currentTarget.dataset.movieId);
+  const rating = Number(event.currentTarget.dataset.rating);
 
-  if (Number.isNaN(rating) || rating < 0.5 || rating > 5) {
+  if (userRatings[movieId] === rating) {
     delete userRatings[movieId];
-    renderMovies();
-    showFeedback("Rating must be between 0.5 and 5.0.", "error");
-    return;
+    showFeedback("Rating removed from this browser session.", "success");
+  } else {
+    userRatings[movieId] = rating;
+    showFeedback("Rating saved for this browser session.", "success");
   }
 
-  userRatings[movieId] = rating;
   renderMovies();
-  showFeedback("Rating saved for this browser session.", "success");
+  updateRatingQueue();
 }
 
-function collectVisibleRatings() {
-  document.querySelectorAll(".rating-input").forEach((input) => {
-    const movieId = Number(input.dataset.movieId);
-    const rating = parseFloat(input.value);
-
-    if (!input.value) {
-      delete userRatings[movieId];
-    } else if (!Number.isNaN(rating) && rating >= 0.5 && rating <= 5) {
-      userRatings[movieId] = rating;
-    }
-  });
-
+function collectRatings() {
   return Object.entries(userRatings).map(([movieId, rating]) => ({
     movieId: Number(movieId),
-    rating
+    rating: Number(rating)
   }));
 }
 
+async function handleGetRecommendations() {
+  const ratings = collectRatings();
+
+  if (ratings.length === 0) {
+    showFeedback("Rate at least one movie before requesting recommendations.", "error");
+    return;
+  }
+
+  recommendBtn.disabled = true;
+  recommendBtn.textContent = "Generating...";
+
+  try {
+    const data = await apiRequest("/recommendations", {
+      method: "POST",
+      body: JSON.stringify({ ratings })
+    });
+    recommendations = data.recommendations;
+    renderRecommendations();
+    showFeedback(
+      recommendations.length ? "Recommendations generated." : "No recommendations found for those ratings.",
+      recommendations.length ? "success" : "error"
+    );
+  } catch (error) {
+    showFeedback(error.message, "error");
+  } finally {
+    recommendBtn.disabled = false;
+    recommendBtn.textContent = "Get Recommendations";
+  }
+}
+
 async function handleShowRatings(event) {
-  const movieId = Number(event.target.dataset.movieId);
+  const movieId = Number(event.currentTarget.dataset.movieId);
   const movie = movies.find((item) => item.movieId === movieId);
   modalMovieTitle.textContent = movie ? movie.title : `Movie ${movieId}`;
   ratingsList.innerHTML = '<div class="rating-item">Loading ratings...</div>';
@@ -252,53 +314,42 @@ async function handleShowRatings(event) {
     }
 
     data.ratings.slice(0, 100).forEach((rating) => {
-      const div = document.createElement("div");
-      div.className = "rating-item";
-      div.innerHTML = `
+      const item = document.createElement("div");
+      item.className = "rating-item";
+      item.innerHTML = `
         <div class="rating-user">
           <div class="user-avatar">${String(rating.userId).slice(-2)}</div>
-          <span>User ${rating.userId}</span>
+          <strong>User ${rating.userId}</strong>
         </div>
-        <div>★ ${Number(rating.rating).toFixed(1)}</div>
+        <strong>${Number(rating.rating).toFixed(1)} ★</strong>
       `;
-      ratingsList.appendChild(div);
+      ratingsList.appendChild(item);
     });
   } catch (error) {
     ratingsList.innerHTML = `<div class="rating-item">${escapeHtml(error.message)}</div>`;
   }
 }
 
+function clearRatings() {
+  Object.keys(userRatings).forEach((movieId) => {
+    delete userRatings[movieId];
+  });
+  recommendations = [];
+  renderMovies();
+  renderRecommendations();
+  updateRatingQueue();
+  showFeedback("Session ratings cleared.", "success");
+}
+
 function closeModal() {
   ratingsModal.classList.add("hidden");
 }
 
-async function handleGetRecommendations() {
-  const ratings = collectVisibleRatings();
-
-  if (ratings.length === 0) {
-    showFeedback("Rate at least one movie before requesting recommendations.", "error");
-    return;
-  }
-
-  try {
-    const data = await apiRequest("/recommendations", {
-      method: "POST",
-      body: JSON.stringify({ ratings })
-    });
-    recommendations = data.recommendations;
-    renderRecommendations();
-    showFeedback(
-      recommendations.length ? "Recommendations generated." : "No recommendations found for those ratings.",
-      recommendations.length ? "success" : "error"
-    );
-  } catch (error) {
-    showFeedback(error.message, "error");
-  }
-}
-
-addMovieBtn.addEventListener("click", handleAddMovie);
 searchBtn.addEventListener("click", () => loadMovies(true));
+addMovieBtn.addEventListener("click", handleAddMovie);
+addMovieForm.addEventListener("submit", handleAddMovie);
 recommendBtn.addEventListener("click", handleGetRecommendations);
+clearRatingsBtn.addEventListener("click", clearRatings);
 closeModalBtn.addEventListener("click", closeModal);
 
 searchQueryEl.addEventListener("keydown", (event) => {
@@ -315,3 +366,4 @@ ratingsModal.addEventListener("click", (event) => {
 
 loadMovies(false);
 renderRecommendations();
+updateRatingQueue();

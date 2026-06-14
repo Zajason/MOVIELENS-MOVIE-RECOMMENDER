@@ -7,94 +7,123 @@
   <link rel="stylesheet" href="index.css" />
 </head>
 <body>
-  <main class="container page">
-    <div id="feedback" class="feedback hidden"></div>
+  <div class="app-shell">
+    <aside class="control-rail">
+      <section class="brand-block">
+        <p class="kicker">MovieLens</p>
+        <h1>Recommendation Studio</h1>
+        <p>Search the dataset, build a temporary rating profile, and generate a ranked watchlist.</p>
+      </section>
 
-    <section class="hero-panel">
-      <div class="hero-copy">
-        <span class="eyebrow">Movie catalog</span>
-        <h2>Find films, add ratings, get a ranked watchlist.</h2>
-        <p>Search the MovieLens dataset and use your session ratings to generate recommendations.</p>
-      </div>
-
-      <div class="search-row">
-        <input type="text" id="searchQuery" placeholder="Search for a movie title" />
-        <button id="searchBtn" class="btn primary">Search</button>
-      </div>
-      <span id="movieCountBadge" class="badge">0 total</span>
-    </section>
-
-    <section class="tools-row">
-      <form class="tool-panel" action="javascript:void(0)">
-        <h2>Add a movie</h2>
-        <div class="inline-fields">
-          <div class="input-group">
-            <label for="newMovieTitle">Title</label>
-            <input type="text" id="newMovieTitle" placeholder="Movie title" />
-          </div>
-          <div class="input-group">
-            <label for="newMovieGenres">Genres</label>
-            <input type="text" id="newMovieGenres" placeholder="Action|Drama" />
-          </div>
-          <button id="addMovieBtn" class="btn secondary" type="button">Add Movie</button>
+      <section class="rail-card">
+        <div class="section-title">
+          <span class="step-mark">01</span>
+          <h2>Find Movies</h2>
         </div>
-      </form>
+        <label for="searchQuery">Title keyword</label>
+        <div class="inline-action">
+          <input type="text" id="searchQuery" placeholder="Matrix, Toy Story, Heat..." />
+          <button id="searchBtn" class="icon-action" type="button" aria-label="Search movies">Search</button>
+        </div>
+        <p class="microcopy">Search is case-insensitive and returns up to 100 matching titles.</p>
+      </section>
 
-      <section class="tool-panel recommendation-tool">
+      <section class="rail-card">
+        <div class="section-title">
+          <span class="step-mark">02</span>
+          <h2>Add Movie</h2>
+        </div>
+        <form id="addMovieForm" action="javascript:void(0)">
+          <label for="newMovieTitle">Movie title</label>
+          <input type="text" id="newMovieTitle" placeholder="New title" />
+
+          <label for="newMovieGenres">Genres</label>
+          <input type="text" id="newMovieGenres" placeholder="Action|Drama" />
+
+          <button id="addMovieBtn" class="primary-action" type="button">Add to Catalog</button>
+        </form>
+      </section>
+
+      <section class="rail-card rating-queue">
+        <div class="section-title queue-heading">
+          <span class="step-mark">03</span>
+          <div>
+            <h2>Rating Profile</h2>
+            <p id="ratingCountText">0 ratings selected</p>
+          </div>
+        </div>
+        <div id="ratingStack" class="rating-stack">
+          <p class="quiet">Rate movies in the catalog to build a temporary profile.</p>
+        </div>
+        <button id="clearRatingsBtn" class="secondary-action" type="button">Clear Ratings</button>
+      </section>
+    </aside>
+
+    <main class="workspace">
+      <div id="feedback" class="feedback hidden"></div>
+
+      <section class="workspace-header">
         <div>
-          <h2>Recommendations</h2>
-          <p>Rate movies in the table first.</p>
+          <p class="kicker">Catalog</p>
+          <h2>Movie Search Results</h2>
+          <p id="searchSummary">Showing the opening catalog sample.</p>
         </div>
-        <div class="recommend-action">
-          <span id="recommendationCountBadge" class="badge hidden">0 picks</span>
-          <button id="recommendBtn" class="btn dark">Get Recommendations</button>
+        <div class="header-actions">
+          <span id="movieCountBadge" class="pill">0 movies</span>
+          <button id="recommendBtn" class="primary-action dark" type="button">Get Recommendations</button>
         </div>
       </section>
-    </section>
 
-    <section class="movie-results">
-      <div class="section-heading results-heading">
-        <div>
-          <span class="eyebrow">Results</span>
-          <h2>Movie matches</h2>
-        </div>
-      </div>
-      <div id="moviesTableBody" class="movie-list" aria-live="polite"></div>
+      <section class="content-grid">
+        <section class="catalog-panel">
+          <div class="table-head">
+            <span>Movie</span>
+            <span>Dataset Rating</span>
+            <span>Your Rating</span>
+            <span>Details</span>
+          </div>
+          <div id="moviesTableBody" class="movie-list" aria-live="polite"></div>
+          <div id="noMoviesMessage" class="empty-state hidden">
+            <h3>No matches found</h3>
+            <p>Try a different keyword or add the movie manually.</p>
+          </div>
+        </section>
 
-      <div id="noMoviesMessage" class="empty-state hidden">
-        <p>No movies found. Try a different search term.</p>
-      </div>
-    </section>
+        <aside class="recommendation-panel">
+          <div class="recommendation-header">
+            <div>
+              <p class="kicker">Output</p>
+              <h2>Your Watchlist</h2>
+            </div>
+            <span id="recommendationCountBadge" class="pill hidden">0 picks</span>
+          </div>
 
-    <section class="recommendations-section">
-      <div class="section-heading">
-        <div>
-          <span class="eyebrow">Output</span>
-          <h2>Your recommendations</h2>
-        </div>
-      </div>
-      <div id="recommendationsEmpty" class="empty-state">
-        <p>Recommendations will appear here after you rate a few movies.</p>
-      </div>
+          <div id="recommendationsEmpty" class="empty-state compact">
+            <h3>No recommendations yet</h3>
+            <p>Rate at least one movie, then request recommendations.</p>
+          </div>
 
-      <div id="recommendationsContainer" class="hidden">
-        <div id="recommendationsTableBody" class="recommendation-list" aria-live="polite"></div>
-      </div>
-    </section>
-  </main>
+          <div id="recommendationsContainer" class="hidden">
+            <div id="recommendationsTableBody" class="recommendation-list" aria-live="polite"></div>
+          </div>
+        </aside>
+      </section>
+    </main>
+  </div>
 
   <div id="ratingsModal" class="modal hidden">
     <div class="modal-backdrop"></div>
-    <div class="modal-content">
+    <section class="modal-content" role="dialog" aria-modal="true" aria-labelledby="ratingsModalTitle">
       <div class="modal-header">
         <div>
-          <h3>User Ratings</h3>
+          <p class="kicker">Dataset Ratings</p>
+          <h2 id="ratingsModalTitle">User Ratings</h2>
           <p id="modalMovieTitle"></p>
         </div>
-        <button id="closeModalBtn" class="icon-btn">X</button>
+        <button id="closeModalBtn" class="close-action" type="button" aria-label="Close ratings dialog">Close</button>
       </div>
       <div id="ratingsList" class="ratings-list"></div>
-    </div>
+    </section>
   </div>
 
   <script src="index.js"></script>

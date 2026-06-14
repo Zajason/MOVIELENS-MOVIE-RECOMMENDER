@@ -150,18 +150,32 @@ def get_recommendations(ratings: list[dict]) -> list[dict]:
                 if movie_id in user_ratings:
                     continue
                 if movie_id not in predictions:
-                    predictions[movie_id] = {"weighted_sum": 0.0, "similarity_sum": 0.0}
+                    predictions[movie_id] = {"weighted_sum": 0.0, "similarity_sum": 0.0, "support": 0}
                 predictions[movie_id]["weighted_sum"] += similarity * (rating - other_mean)
                 predictions[movie_id]["similarity_sum"] += abs(similarity)
+                predictions[movie_id]["support"] += 1
 
         scored = []
         for movie_id, values in predictions.items():
             if values["similarity_sum"] == 0:
                 continue
-            predicted = active_user_mean + values["weighted_sum"] / values["similarity_sum"]
-            scored.append((movie_id, max(0.5, min(5.0, predicted))))
+            raw_predicted = active_user_mean + values["weighted_sum"] / values["similarity_sum"]
+            predicted = max(0.5, min(5.0, raw_predicted))
+            scored.append(
+                {
+                    "movie_id": movie_id,
+                    "predicted": predicted,
+                    "raw_predicted": raw_predicted,
+                    "support": values["support"],
+                }
+            )
 
-        top_movie_ids = [movie_id for movie_id, _ in sorted(scored, key=lambda item: item[1], reverse=True)[:TOP_N_RECOMMENDATIONS]]
+        top_scored = sorted(
+            scored,
+            key=lambda item: (item["predicted"], item["support"], item["raw_predicted"]),
+            reverse=True,
+        )[:TOP_N_RECOMMENDATIONS]
+        top_movie_ids = [item["movie_id"] for item in top_scored]
         if not top_movie_ids:
             return []
 
@@ -176,7 +190,7 @@ def get_recommendations(ratings: list[dict]) -> list[dict]:
         ).fetchall()
 
     movie_lookup = {row["movieId"]: dict(row) for row in movie_rows}
-    prediction_lookup = dict(scored)
+    prediction_lookup = {item["movie_id"]: item["predicted"] for item in scored}
     recommendations = []
     for movie_id in top_movie_ids:
         movie = movie_lookup.get(movie_id)
